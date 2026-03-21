@@ -32,6 +32,10 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
   const tasks = await prisma.task.findMany({
     where: { projectId: params.projectId },
     orderBy: { createdAt: 'desc' },
+    include: {
+      assignedTo: { select: { id: true, name: true, email: true } },
+      checkItems: { orderBy: { order: 'asc' } },
+    },
   });
 
   return NextResponse.json(tasks);
