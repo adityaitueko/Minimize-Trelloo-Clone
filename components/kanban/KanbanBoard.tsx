@@ -58,8 +58,13 @@ export default function KanbanDashboard({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [checklist, setChecklist] = useState<{ text: string; completed?: boolean }[]>([]);
+  const [checklistInput, setChecklistInput] = useState("");
+  const [newCheckInput, setNewCheckInput] = useState("");
   const [status, setStatus] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openDialogMail, setOpenDialogMail] = useState(false); // State untuk mengontrol dialog
   const [loading, setLoading] = useState(true);
@@ -78,7 +83,6 @@ export default function KanbanDashboard({
 
         // Ambil anggota tim
         const usersResponse = await fetch(`/api/users?boardId=${boardId}`);
-        // const usersData = await usersResponse.json();
         const members = await usersResponse.json();
         setTeamMembers(members);
       } catch (error) {
@@ -120,6 +124,7 @@ export default function KanbanDashboard({
           status,
           projectId,
           assigneeId,
+          checkItems: checklist,
         }),
       });
       if (!response.ok) throw new Error("Failed to create task");
@@ -130,10 +135,49 @@ export default function KanbanDashboard({
       setTitle("");
       setDescription("");
       setStatus("");
+      setChecklist([]);
       setAssigneeId("");
     } catch (error: unknown) {
       console.error("Error creating task:", error);
       toast.error(error instanceof Error ? error.message : "Failed to create task");
+    }
+  };
+
+    const [openViewDialog, setOpenViewDialog] = useState(false);
+
+    const openView = (task: Task) => {
+      setSelectedTask(task);
+      setOpenViewDialog(true);
+    };
+
+  const openEdit = (task: Task) => {
+    setSelectedTask(task);
+    setOpenEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedTask) return;
+    try {
+      const assigneeIdToSend = (selectedTask as any).assignedToId || (selectedTask as any).assigneeId || selectedTask.assignedTo?.id || null;
+      const res = await fetch(`/api/tasks/taskdragged/${selectedTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: selectedTask.title,
+          description: selectedTask.description,
+          status: selectedTask.status,
+          assigneeId: assigneeIdToSend,
+          checkItems: selectedTask.checkItems ?? [],
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      toast.success("Task updated");
+      setOpenEditDialog(false);
+      setSelectedTask(null);
+      await fetchTasks();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to update task");
     }
   };
   const handleDragEnd = async (result: DropResult) => {
@@ -296,7 +340,7 @@ export default function KanbanDashboard({
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className="bg-blue-600 hover:bg-blue-700 rounded-lg p-3 cursor-pointer transition-all border border-transparent hover:border-zinc-600"
+                                    className="bg-blue-600 hover:bg-blue-700 rounded-lg p-3 transition-all border border-transparent hover:border-zinc-600"
                                   >
                                     <h3 className="font-bold text-white mb-1">
                                       {task.title}
@@ -316,6 +360,10 @@ export default function KanbanDashboard({
                                             .join("")}
                                         </AvatarFallback>
                                       </Avatar>
+                                    </div>
+                                    <div className="mt-3 flex gap-2">
+                                      <Button size="sm" variant="ghost" onClick={() => openView(task)}>View</Button>
+                                      <Button size="sm" variant="outline" onClick={() => openEdit(task)}>Edit</Button>
                                     </div>
                                   </div>
                                 )}
@@ -360,6 +408,39 @@ export default function KanbanDashboard({
                                     onChange={(e) => setTitle(e.target.value)}
                                     className="col-span-3 dark:text-white text-black"
                                   />
+                                </div>
+
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                  <Label className="text-right">Checklist</Label>
+                                  <div className="col-span-3">
+                                    <div className="flex gap-2">
+                                      <Input
+                                        placeholder="New checklist item"
+                                        value={checklistInput}
+                                        onChange={(e) => setChecklistInput(e.target.value)}
+                                        className="flex-1"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          if (checklistInput.trim()) {
+                                            setChecklist((c) => [...c, { text: checklistInput.trim(), completed: false }]);
+                                            setChecklistInput("");
+                                          }
+                                        }}
+                                      >Add</Button>
+                                    </div>
+                                    <ul className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                                      {checklist.map((c, idx) => (
+                                        <li key={idx} className="flex items-center gap-2">
+                                          <input type="checkbox" checked={!!c.completed} onChange={(e) => {
+                                            setChecklist((prev) => prev.map((it, i) => i === idx ? { ...it, completed: e.target.checked } : it));
+                                          }} />
+                                          <span className="flex-1 text-sm">{c.text}</span>
+                                          <Button variant="ghost" onClick={() => setChecklist((prev) => prev.filter((_, i) => i !== idx))}>Remove</Button>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
                                 </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
@@ -412,8 +493,15 @@ export default function KanbanDashboard({
                                     Assign to
                                   </Label>
                                   <Select
-                                    value={assigneeId}
-                                    onValueChange={setAssigneeId}
+                                    value={selectedTask ? (selectedTask.assignedTo?.id ?? selectedTask.assigneeId ?? '') : assigneeId}
+                                    onValueChange={(val) => {
+                                      if (selectedTask) {
+                                        const member = teamMembers.find(m => m.id === val) ?? null;
+                                        setSelectedTask({ ...selectedTask, assignedTo: member ?? undefined });
+                                      } else {
+                                        setAssigneeId(val);
+                                      }
+                                    }}
                                   >
                                     <SelectTrigger className="col-span-3 dark:text-white text-black">
                                       <SelectValue placeholder="Select assignee" />
@@ -445,7 +533,95 @@ export default function KanbanDashboard({
                               </div>
                             </DialogContent>
                           </Dialog>
-                         <InviteMemberDialog boardId={boardId} open={openDialogMail} setOpen={setOpenDialogMail}/>
+                        <InviteMemberDialog boardId={boardId} open={openDialogMail} setOpen={setOpenDialogMail}/>
+                        {/* View Task Dialog */}
+                        <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
+                          <DialogContent className="dark:bg-zinc-800 bg-white max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="text-xl">Task Details</DialogTitle>
+                            </DialogHeader>
+                            {selectedTask && (
+                              <div className="grid gap-4 py-4">
+                                <div className="font-bold text-lg">{selectedTask.title}</div>
+                                <div className="text-sm text-zinc-600">{selectedTask.description}</div>
+                                <div>
+                                  <div className="font-medium mt-2">Checklist</div>
+                                  <ul className="mt-2 space-y-2">
+                                    {(selectedTask.checkItems ?? []).map((c) => (
+                                      <li key={c.id} className="flex items-center gap-2">
+                                        <input type="checkbox" checked={!!c.completed} readOnly />
+                                        <span className={c.completed ? 'line-through text-zinc-500' : ''}>{c.text}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => setOpenViewDialog(false)}>Close</Button>
+                                  <Button onClick={() => { setOpenViewDialog(false); openEdit(selectedTask); }}>Edit</Button>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        {/* Edit Task Dialog */}
+                        <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
+                          <DialogContent className="dark:bg-zinc-800 bg-white max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="text-xl">Edit Task</DialogTitle>
+                            </DialogHeader>
+                            {selectedTask && (
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label className="text-right">Title</Label>
+                                  <Input className="col-span-3" value={selectedTask.title} onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })} />
+                                </div>
+
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label className="text-right">Description</Label>
+                                  <Input className="col-span-3" value={selectedTask.description ?? ''} onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })} />
+                                </div>
+
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                  <Label className="text-right">Checklist</Label>
+                                  <div className="col-span-3">
+                                    <ul className="space-y-2 max-h-48 overflow-y-auto">
+                                      {(selectedTask.checkItems ?? []).map((c, idx) => (
+                                        <li key={c.id} className="flex items-center gap-2">
+                                          <input type="checkbox" checked={!!c.completed} onChange={(e) => {
+                                            const next = (selectedTask.checkItems ?? []).map((it, i) => i === idx ? { ...it, completed: e.target.checked } : it);
+                                            setSelectedTask({ ...selectedTask, checkItems: next });
+                                          }} />
+                                          <Input value={c.text} onChange={(e) => {
+                                            const next = (selectedTask.checkItems ?? []).map((it, i) => i === idx ? { ...it, text: e.target.value } : it);
+                                            setSelectedTask({ ...selectedTask, checkItems: next });
+                                          }} className="flex-1" />
+                                          <Button variant="ghost" onClick={() => {
+                                            const next = (selectedTask.checkItems ?? []).filter((_, i) => i !== idx);
+                                            setSelectedTask({ ...selectedTask, checkItems: next });
+                                          }}>Remove</Button>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    <div className="mt-2 flex gap-2">
+                                      <Input placeholder="New checklist item" value={newCheckInput} onChange={(e) => setNewCheckInput(e.target.value)} />
+                                      <Button onClick={() => {
+                                        if (!newCheckInput.trim()) return;
+                                        const next = [...(selectedTask.checkItems ?? []), { id: `tmp-${Date.now()}`, text: newCheckInput.trim(), completed: false, order: (selectedTask.checkItems ?? []).length }];
+                                        setSelectedTask({ ...selectedTask, checkItems: next });
+                                        setNewCheckInput("");
+                                      }}>Add</Button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => { setOpenEditDialog(false); setSelectedTask(null); }}>Cancel</Button>
+                                  <Button onClick={handleSaveEdit}>Save</Button>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
                         </>
                       )}
                     </CardContent>
