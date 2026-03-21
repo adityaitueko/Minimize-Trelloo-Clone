@@ -41,8 +41,14 @@ export interface Task {
   description?: string | null;
   projectId: string;
   project: Project;
-  assignedToId?: string | null;
+  assigneeId?: string | null;
   assignedTo?: User | null;
+  checkItems?: {
+    id: string;
+    text: string;
+    completed: boolean;
+    order: number;
+  }[];
   status: string; // could be: "pending", "in_progress", "done" etc.
   createdAt: Date;
   updatedAt: Date;
