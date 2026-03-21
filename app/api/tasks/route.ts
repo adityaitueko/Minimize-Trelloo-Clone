@@ -6,26 +6,38 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 
+const CheckItemSchema = z.object({
+  text: z.string().min(1),
+  completed: z.boolean().optional(),
+  order: z.number().optional(),
+});
+
 const TaskSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   status: z.string().optional().default("todo"),
   projectId: z.string().min(1, "Project ID is required"),
   assigneeId: z.string().nullable().optional(),
+  checkItems: z.array(CheckItemSchema).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const validation = TaskSchema.safeParse(body);
+    let validation;
+    try {
+      validation = TaskSchema.safeParse(body);
+    } catch (err) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     if (!validation.success) {
-      const errors = validation.error.errors.map(err => ({
-        field: err.path.join('.'),
-        message: err.message
+      const errors = (validation.error.issues ?? []).map((issue: any) => ({
+        field: (issue.path || []).join('.'),
+        message: issue.message,
       }));
       return NextResponse.json(
-        { error: "Validation failed", details: errors },
+        { error: 'Validation failed', details: errors },
         { status: 400 }
       );
     }
@@ -65,7 +77,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Buat task
+    // Prevent duplicate task title in the same project
+    const existing = await prisma.task.findFirst({
+      where: { projectId, title },
+    });
+    if (existing) {
+      return NextResponse.json({ error: 'Task with same title already exists' }, { status: 409 });
+    }
+
+    // Buat task (dan checkItems jika ada)
     const task = await prisma.task.create({
       data: {
         title,
@@ -73,16 +93,20 @@ export async function POST(req: NextRequest) {
         status,
         projectId,
         assigneeId: assigneeId || null,
+        checkItems: validation.data.checkItems
+          ? {
+              create: validation.data.checkItems.map((c) => ({
+                text: c.text,
+                completed: c.completed ?? false,
+                order: c.order ?? 0,
+              })),
+            }
+          : undefined,
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        projectId: true,
-        assigneeId: true,
-        createdAt: true,
-      }
+      include: {
+        checkItems: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
     });
 
     return NextResponse.json(task, { status: 201 });
@@ -140,6 +164,9 @@ export async function GET(
       include: {
         assignedTo: {
           select: { id: true, name: true, email: true },
+        },
+        checkItems: {
+          orderBy: { order: 'asc' },
         },
       },
     });
