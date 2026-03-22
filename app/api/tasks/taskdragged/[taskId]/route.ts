@@ -1,13 +1,14 @@
 // app/api/tasks/[taskId]/route.ts
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
+  const { taskId } = await params;
   // 1. Verifikasi session
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
@@ -21,7 +22,7 @@ export async function PUT(
 
   // 3. Temukan task dan project-nya
   const task = await prisma.task.findUnique({
-    where: { id: params.taskId },
+    where: { id: taskId },
     include: { project: { include: { members: true } } },
   });
   if (!task) {
@@ -38,25 +39,25 @@ export async function PUT(
 
   // 5. Update task fields
   try {
-    const data: any = {};
+    const data: Record<string, string | null> = {};
     if (typeof title === 'string') data.title = title;
     if (typeof description === 'string') data.description = description;
     if (typeof status === 'string') data.status = status;
     if (typeof assigneeId === 'string' || assigneeId === null) data.assigneeId = assigneeId;
 
-    const updated = await prisma.task.update({
-      where: { id: params.taskId },
+    await prisma.task.update({
+      where: { id: taskId },
       data,
       include: { checkItems: true },
     });
 
     // If checkItems provided, replace existing items
     if (Array.isArray(checkItems)) {
-      await prisma.taskCheckItem.deleteMany({ where: { taskId: params.taskId } });
+      await prisma.taskCheckItem.deleteMany({ where: { taskId } });
       if (checkItems.length > 0) {
         await prisma.taskCheckItem.createMany({
-          data: checkItems.map((c: any, idx: number) => ({
-            taskId: params.taskId,
+          data: checkItems.map((c: { text?: string; completed?: boolean; order?: number }, idx: number) => ({
+            taskId,
             text: String(c.text || ''),
             completed: Boolean(c.completed || false),
             order: typeof c.order === 'number' ? c.order : idx,
@@ -66,7 +67,7 @@ export async function PUT(
     }
 
     const refreshed = await prisma.task.findUnique({
-      where: { id: params.taskId },
+      where: { id: taskId },
       include: {
         checkItems: { orderBy: { order: 'asc' } },
         project: { include: { members: true } },
