@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(_: NextRequest, { params }: { params: { boardId: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ boardId: string }> }) {
+  const { boardId } = await params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
@@ -12,7 +13,7 @@ export async function GET(_: NextRequest, { params }: { params: { boardId: strin
   }
 
   const project = await prisma.project.findUnique({
-    where: { id: params.boardId },
+    where: { id: boardId },
     include: {
       members: true,
       owner: true,
@@ -34,22 +35,22 @@ export async function GET(_: NextRequest, { params }: { params: { boardId: strin
 }
 
 
-export async function PUT(req: NextRequest, { params }: { params: { boardId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ boardId: string }> }) {
+    const { boardId } = await params;
     const body = await req.json();
-    const { name, description } = body;
+    const { name } = body;
 
-    // Validasi input
     if (!name || typeof name !== 'string' || name.length < 3) {
         return NextResponse.json({ error: 'Invalid project name' }, { status: 400 });
     }
 
     try {
         const updatedProject = await prisma.project.update({
-            where: { id: params.boardId },
-            data: { name, description },
+            where: { id: boardId },
+            data: { name },
         });
         return NextResponse.json(updatedProject);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
     }
 }

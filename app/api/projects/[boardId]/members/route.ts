@@ -1,14 +1,14 @@
 // app/api/projects/[projectId]/members/route.ts
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { boardId: string } }
+  { params }: { params: Promise<{ boardId: string }> }
 ) {
-  const projectId = params.boardId;
+  const { boardId: projectId } = await params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   const { email, role = "member" } = await req.json();

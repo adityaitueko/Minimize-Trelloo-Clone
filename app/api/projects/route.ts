@@ -1,6 +1,6 @@
 // app/api/projects/route.ts
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // sesuaikan path jika berbeda
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions'; // sesuaikan path jika berbeda
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
       },
     });
     return NextResponse.json(project);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }
 
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   if (!userId) {
