@@ -15,17 +15,22 @@ model User {
   ownedProjects  Project[]     @relation("ProjectOwner")
   assignedTasks  Task[]        @relation("TaskAssignee")
   memberships    Membership[]
+  repoConnections RepositoryConnection[]
+  notifications  Notification[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model Project {
-  id        String      @id @default(cuid())
-  name      String
-  ownerId   String
-  owner     User        @relation("ProjectOwner", fields: [ownerId], references: [id])
-  tasks     Task[]
-  members   Membership[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  name        String
+  ownerId     String
+  owner       User        @relation("ProjectOwner", fields: [ownerId], references: [id])
+  tasks       Task[]
+  members     Membership[]
+  notifications Notification[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Task {
@@ -38,6 +43,7 @@ model Task {
   assigneeId   String?
   assignedTo   User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
   checkItems   TaskCheckItem[]
+  reviews      ReviewRequest[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -57,11 +63,53 @@ model Membership {
   id         String   @id @default(cuid())
   userId     String
   projectId  String
-  role       String   @default("member")
+  role       String   @default("developer") // owner, developer, reviewer, tester
   user       User     @relation(fields: [userId], references: [id])
   project    Project  @relation(fields: [projectId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, projectId])
+}
+
+model ReviewRequest {
+  id          String   @id @default(cuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  reviewerId  String?
+  type        String   @default("self") // self, ai, tester
+  status      String   @default("pending") // pending, approved, rejected, in_review
+  notes       String?
+  aiReview    Json?    // Store AI review results
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RepositoryConnection {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  provider     String   // "github" or "gitlab"
+  accessToken  String
+  refreshToken String?
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, provider])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  type      String   // task_assigned, task_moved, review_requested, etc.
+  title     String
+  message   String
+  data      Json?    // Additional context (taskId, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
