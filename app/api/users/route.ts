@@ -1,6 +1,6 @@
 // app/api/users/route.ts
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { prisma } from "@/lib/prisma";
 import { NextResponse ,NextRequest} from "next/server";
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Gabungkan owner + members (hindari duplikat jika owner juga dr membership)
-  const allUsersMap: Record<string, { id: string; name: string; email: string }> = {};
+  const allUsersMap: Record<string, { id: string; name: string | null; email: string }> = {};
 
   // Tambah owner
   allUsersMap[project.owner.id] = project.owner;
