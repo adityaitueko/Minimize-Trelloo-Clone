@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
   }
 
   const project = await prisma.project.findUnique({
-    where: { id: params.projectId },
+    where: { id: projectId },
     include: {
       members: true,
     },
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
   }
 
   const tasks = await prisma.task.findMany({
-    where: { projectId: params.projectId },
+    where: { projectId },
     orderBy: { createdAt: 'desc' },
     include: {
       assignedTo: { select: { id: true, name: true, email: true } },

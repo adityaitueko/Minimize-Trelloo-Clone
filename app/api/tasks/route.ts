@@ -3,8 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { z } from 'zod';
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
+import { z, type ZodIssue } from 'zod';
 
 const CheckItemSchema = z.object({
   text: z.string().min(1),
@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
     let validation;
     try {
       validation = TaskSchema.safeParse(body);
-    } catch (err) {
+    } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
     if (!validation.success) {
-      const errors = (validation.error.issues ?? []).map((issue: any) => ({
+      const errors = (validation.error.issues ?? []).map((issue: ZodIssue) => ({
         field: (issue.path || []).join('.'),
         message: issue.message,
       }));
@@ -131,16 +131,15 @@ export async function POST(req: NextRequest) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
   // 1. Verifikasi session
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const projectId = params.projectId;
 
   // 2. Pastikan project ada & user owner/member
   const project = await prisma.project.findUnique({
