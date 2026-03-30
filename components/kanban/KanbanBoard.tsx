@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Task, Project, User } from "@/lib/types";
-import { PlusIcon, CheckSquare, Eye, Edit2, Search, LayoutGrid, Users, Wifi, WifiOff, Trash2 } from "lucide-react";
+import { PlusIcon, CheckSquare, Eye, Edit2, Search, LayoutGrid, Users, Wifi, WifiOff, Trash2, Settings } from "lucide-react";
 import { useParams } from "next/navigation";
 import {
   DragDropContext,
@@ -36,10 +36,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { type Role } from "@/lib/permissions";
 import InviteMemberDialog from "./upBoard/InviteMemberDialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "./NotificationBell";
 import { useSocket } from "@/hooks/useSocket";
+import ReviewPanel from "./ReviewPanel";
+import SettingsPanel from "./SettingsPanel";
 
 const columns = [
   { id: "todo", title: "To-Do", color: "bg-slate-400" },
@@ -85,6 +88,9 @@ export default function KanbanDashboard({
   const projectId = boardId;
   const [projectDetail, setProjectDetail] = useState<Project | null>(null);
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [openReviewDialog, setOpenReviewDialog] = useState(false);
+  const [taskForReview, setTaskForReview] = useState<Task | null>(null);
+  const [openSettingsPanel, setOpenSettingsPanel] = useState(false);
 
   const currentUserRole = useMemo(() => {
     const userId = session?.user?.id;
@@ -182,6 +188,14 @@ export default function KanbanDashboard({
     fetchTasks();
   }, [fetchTasks]);
 
+  useEffect(() => {
+    const handleOpenInviteDialog = () => {
+      setOpenDialogMail(true);
+    };
+    window.addEventListener('openInviteDialog', handleOpenInviteDialog);
+    return () => window.removeEventListener('openInviteDialog', handleOpenInviteDialog);
+  }, []);
+
   const handleCreateTask = async () => {
     try {
       const response = await fetch("/api/tasks", {
@@ -221,6 +235,11 @@ export default function KanbanDashboard({
   const openEdit = (task: Task) => {
     setSelectedTask(task);
     setOpenEditDialog(true);
+  };
+
+  const openReview = (task: Task) => {
+    setTaskForReview(task);
+    setOpenReviewDialog(true);
   };
 
   const handleSaveEdit = async () => {
@@ -357,6 +376,17 @@ export default function KanbanDashboard({
             >
               Members
             </Button>
+
+            {currentUserRole === "owner" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setOpenSettingsPanel(true)}
+                title="Project Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </header>
 
@@ -460,6 +490,17 @@ export default function KanbanDashboard({
                                         </div>
                                         
                                         <div className="flex items-center gap-1">
+                                          {(currentUserRole === 'owner' || currentUserRole === 'reviewer') && task.status === 'review' && (
+                                            <Button 
+                                              variant="ghost" 
+                                              size="icon" 
+                                              className="h-7 w-7"
+                                              onClick={() => openReview(task)}
+                                              title="Review task"
+                                            >
+                                              <CheckSquare className="h-3 w-3 text-purple-500" />
+                                            </Button>
+                                          )}
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -728,6 +769,40 @@ export default function KanbanDashboard({
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Review Dialog */}
+          <Dialog open={openReviewDialog} onOpenChange={setOpenReviewDialog}>
+            <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Review Task</DialogTitle>
+                <DialogDescription>
+                  Choose a review method for: {taskForReview?.title}
+                </DialogDescription>
+              </DialogHeader>
+              {taskForReview && (
+                <ReviewPanel
+                  taskId={taskForReview.id}
+                  taskTitle={taskForReview.title}
+                  open={openReviewDialog}
+                  onOpenChange={setOpenReviewDialog}
+                  onReviewComplete={() => {
+                    setOpenReviewDialog(false);
+                    setTaskForReview(null);
+                    fetchTasks();
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Settings Panel */}
+          <SettingsPanel
+            projectId={projectId}
+            currentUserId={session?.user?.id || ""}
+            currentUserRole={(currentUserRole || "developer") as Role}
+            open={openSettingsPanel}
+            onOpenChange={setOpenSettingsPanel}
+          />
         </div>
       </main>
     </div>

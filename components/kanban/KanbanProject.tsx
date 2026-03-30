@@ -59,7 +59,7 @@ export default function KanbanProject({ session, children }: { session: Session,
 
   function handleCreate() {
     if (newName.trim()) {
-      addBoard(newName.trim(), session.user.id);
+      addBoard(newName.trim());
       setNewName("");
       setShowCreateDialog(false);
     }

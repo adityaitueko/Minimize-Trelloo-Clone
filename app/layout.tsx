@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Treeloo - Multi-User Project Management",
-  description: "Treeloo - Multi-User Project Management Application",
+  title: "Twillo - Multi-User Project Management",
+  description: "Twillo - Multi-User Project Management Application",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider defaultTheme="dark" storageKey="treeloo-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="twillo-theme">
           {children}
         </ThemeProvider>
       </body>

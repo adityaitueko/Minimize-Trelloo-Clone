@@ -77,7 +77,7 @@ export default function Sidebar({ session }: SidebarProps) {
       {/* Header */}
       <div className="p-3 flex items-center justify-between border-b border-sidebar-border">
         {!isCollapsed && (
-          <span className="font-bold text-lg text-sidebar-foreground">Treeloo</span>
+          <span className="font-bold text-lg text-sidebar-foreground">Twillo</span>
         )}
         <Button
           variant="ghost"
