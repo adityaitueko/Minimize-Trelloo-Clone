@@ -68,7 +68,7 @@ export class DiscordNotificationService {
               },
             ],
             footer: {
-              text: 'Treeloo Kanban',
+              text: 'Twillo Kanban',
             },
             timestamp: new Date().toISOString(),
           },
@@ -121,7 +121,7 @@ export class DiscordNotificationService {
               },
             ],
             footer: {
-              text: 'Treeloo Kanban',
+              text: 'Twillo Kanban',
             },
             timestamp: new Date().toISOString(),
           },
@@ -183,7 +183,7 @@ export class DiscordNotificationService {
               },
             ],
             footer: {
-              text: 'Treeloo Kanban',
+              text: 'Twillo Kanban',
             },
             timestamp: new Date().toISOString(),
           },

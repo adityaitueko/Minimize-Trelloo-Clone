@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Autosuggest from 'react-autosuggest';
+import Autosuggest, { Suggestion } from '@/components/ui/autosuggest';
 import { useDebounce } from '@uidotdev/usehooks';
 import {
   Dialog,
@@ -15,14 +15,63 @@ import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
+import { ROLES, ROLE_COLORS, type Role } from '@/lib/permissions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type User = { id: string; name: string; email: string };
-export interface Suggestion { id: string; name: string; email: string }
 
 interface InviteMemberDialogProps {
   boardId: string;
   open: boolean;
   setOpen: (open: boolean) => void;
+}
+
+function RoleSelector({ currentRole, onRoleChange }: { currentRole: Role; onRoleChange: (role: Role) => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="w-full justify-between">
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "w-2 h-2 rounded-full",
+              ROLE_COLORS[currentRole].split(" ")[0]
+            )} />
+            {ROLES[currentRole].label}
+          </div>
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[250px]">
+        {(Object.keys(ROLES) as Role[]).map((role) => (
+          <DropdownMenuItem
+            key={role}
+            onClick={() => onRoleChange(role)}
+            className={cn(
+              currentRole === role && "bg-muted"
+            )}
+          >
+            <span className={cn(
+              "w-2 h-2 rounded-full mr-2",
+              ROLE_COLORS[role].split(" ")[0]
+            )} />
+            <div>
+              <p className="font-medium">{ROLES[role].label}</p>
+              <p className="text-xs text-muted-foreground">
+                {ROLES[role].description}
+              </p>
+            </div>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export default function InviteMemberDialog({
@@ -37,9 +86,9 @@ export default function InviteMemberDialog({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selected, setSelected] = useState<Suggestion | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role>('developer');
   const addUser = useUserStore((state) => state.addUser);
 
-  // Fetch suggestions tiap query berubah
   useEffect(() => {
     async function fetchSuggestions() {
       if (debouncedQuery.length < 2) {
@@ -72,7 +121,7 @@ export default function InviteMemberDialog({
   const onSuggestionsClearRequested = () => setSuggestions([]);
   const getSuggestionValue = (s: Suggestion) => s.name;
   const renderSuggestion = (s: Suggestion) => (
-    <div className="px-4 py-2 hover:bg-gray-100">
+    <div className="px-2 py-2">
       <div className="font-medium">{s.name}</div>
       <div className="text-sm text-gray-500">{s.email}</div>
     </div>
@@ -83,7 +132,6 @@ export default function InviteMemberDialog({
     setValue(suggestion.name);
   };
 
-  // Invite handler
   const handleInvite = async () => {
     if (!selected) return;
     setLoading(true);
@@ -91,7 +139,7 @@ export default function InviteMemberDialog({
       const res = await fetch(`/api/projects/${boardId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: selected.email }),
+        body: JSON.stringify({ email: selected.email, role: selectedRole }),
       });
 
       if (!res.ok) {
@@ -99,17 +147,16 @@ export default function InviteMemberDialog({
         throw new Error(err.error || 'Invite gagal');
       }
 
-      // Tambahkan user ke global store
       addUser(selected);
-     toast.success(`${selected.name} invited!`);
+      toast.success(`${selected.name} invited as ${ROLES[selectedRole].label}!`);
 
-    router.refresh(); // Refresh page to reflect changes
-      // Reset form
+      router.refresh();
       setOpen(false);
       
       setValue('');
       setRawQuery('');
       setSelected(null);
+      setSelectedRole('developer');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan.');
     } finally {
@@ -155,12 +202,20 @@ export default function InviteMemberDialog({
           </div>
         )}
 
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Role</label>
+          <RoleSelector currentRole={selectedRole} onRoleChange={setSelectedRole} />
+          <p className="text-xs text-muted-foreground">
+            {ROLES[selectedRole].description}
+          </p>
+        </div>
+
         <Button
           onClick={handleInvite}
           disabled={loading || !selected}
           className="mt-4"
         >
-          {loading ? 'Adding…' : 'Add Member'}
+          {loading ? 'Adding…' : `Add as ${ROLES[selectedRole].label}`}
         </Button>
       </DialogContent>
     </Dialog>

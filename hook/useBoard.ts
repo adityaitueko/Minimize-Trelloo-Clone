@@ -28,14 +28,13 @@ export function useBoards() {
   }, []);
 
   // Add board via API
-  async function addBoard(name: string, owner: string) {
+  async function addBoard(name: string) {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          ownerId: owner,
         }),
       });
 

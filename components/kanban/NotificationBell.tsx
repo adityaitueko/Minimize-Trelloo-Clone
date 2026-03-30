@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
+import { FaUser, FaSyncAlt, FaStar, FaTrashAlt, FaSearch, FaCheck, FaTimes, FaHandPaper, FaBullhorn } from "react-icons/fa";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,15 +18,15 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 const NOTIFICATION_ICONS: Record<string, React.ReactNode> = {
-  task_assigned: "👤",
-  task_moved: "🔄",
-  task_created: "✨",
-  task_deleted: "🗑️",
-  review_requested: "🔍",
-  review_approved: "✅",
-  review_rejected: "❌",
-  member_joined: "👋",
-  mention: "@",
+  task_assigned: <FaUser className="text-lg" />,
+  task_moved: <FaSyncAlt className="text-lg" />,
+  task_created: <FaStar className="text-lg" />,
+  task_deleted: <FaTrashAlt className="text-lg" />,
+  review_requested: <FaSearch className="text-lg" />,
+  review_approved: <FaCheck className="text-lg" />,
+  review_rejected: <FaTimes className="text-lg" />,
+  member_joined: <FaHandPaper className="text-lg" />,
+  mention: <span className="text-base font-bold">@</span>,
 };
 
 export function NotificationBell() {
@@ -51,7 +52,7 @@ export function NotificationBell() {
   };
 
   const getNotificationIcon = (type: string) => {
-    return NOTIFICATION_ICONS[type] || "📢";
+    return NOTIFICATION_ICONS[type] || <FaBullhorn className="text-lg" />;
   };
 
   return (
@@ -120,7 +121,7 @@ export function NotificationBell() {
                   }}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0 mt-0.5">
+                    <span className="flex-shrink-0 mt-0.5">
                       {getNotificationIcon(notification.type)}
                     </span>
                     <div className="flex-1 min-w-0">
