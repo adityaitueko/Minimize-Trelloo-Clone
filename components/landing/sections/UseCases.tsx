@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaChartBar, FaUsers, FaCheck, FaBolt, FaChartLine, FaLink } from 'react-icons/fa';
 import FadeIn from '@/components/animations/FadeIn';
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer';
 
@@ -7,37 +8,37 @@ const UseCases = () => {
     {
       title: "Project Management",
       description: "Keep your projects on track with powerful planning tools, timelines, and progress tracking.",
-      icon: "📊",
+      Icon: FaChartBar,
       features: ["Gantt charts", "Task dependencies", "Milestone tracking", "Resource allocation"]
     },
     {
       title: "Team Collaboration",
       description: "Bring your team together with real-time communication, file sharing, and collaborative workspaces.",
-      icon: "👥",
+      Icon: FaUsers,
       features: ["Real-time updates", "Comments & mentions", "File sharing", "Team chat"]
     },
     {
       title: "Task Tracking",
       description: "Organize and prioritize tasks with customizable boards, lists, and cards.",
-      icon: "✅",
+      Icon: FaCheck,
       features: ["Kanban boards", "Custom fields", "Due dates", "Priority levels"]
     },
     {
       title: "Workflow Automation",
       description: "Automate repetitive tasks and streamline your workflow with powerful automation rules.",
-      icon: "⚡",
+      Icon: FaBolt,
       features: ["Custom rules", "Automated actions", "Triggers", "Templates"]
     },
     {
       title: "Reporting & Analytics",
       description: "Gain insights into your team&apos;s performance with detailed reports and analytics.",
-      icon: "📈",
+      Icon: FaChartLine,
       features: ["Custom dashboards", "Performance metrics", "Time tracking", "Export data"]
     },
     {
       title: "Integrations",
       description: "Connect Twillo with your favorite tools and services for seamless workflow.",
-      icon: "🔗",
+      Icon: FaLink,
       features: ["100+ integrations", "API access", "Webhooks", "Custom integrations"]
     }
   ];
@@ -63,7 +64,7 @@ const UseCases = () => {
             <StaggerItem key={index}>
               <div className="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                 <div className="w-16 h-16 bg-blue-900 rounded-lg flex items-center justify-center mb-6">
-                  <span className="text-3xl">{solution.icon}</span>
+                  <solution.Icon className="text-3xl text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">
                   {solution.title}

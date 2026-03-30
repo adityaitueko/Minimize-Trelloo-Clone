@@ -1,42 +1,43 @@
 import React from 'react';
 import Link from 'next/link';
+import { FaBook, FaBullseye, FaCog, FaLink, FaLock, FaBriefcase } from 'react-icons/fa';
 import FadeIn from '@/components/animations/FadeIn';
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer';
 
 const HelpCenter = () => {
   const categories = [
     {
-      icon: "📚",
+      Icon: FaBook,
       title: "Getting Started",
       description: "Learn the basics of Twillo and get up and running quickly.",
       articles: 12
     },
     {
-      icon: "🎯",
+      Icon: FaBullseye,
       title: "Project Management",
       description: "Master project planning, task management, and team collaboration.",
       articles: 24
     },
     {
-      icon: "⚙️",
+      Icon: FaCog,
       title: "Settings & Configuration",
       description: "Customize Twillo to fit your team&apos;s workflow and preferences.",
       articles: 18
     },
     {
-      icon: "🔗",
+      Icon: FaLink,
       title: "Integrations",
       description: "Connect Twillo with your favorite tools and services.",
       articles: 15
     },
     {
-      icon: "🔒",
+      Icon: FaLock,
       title: "Security & Privacy",
       description: "Learn about our security practices and privacy features.",
       articles: 8
     },
     {
-      icon: "💼",
+      Icon: FaBriefcase,
       title: "Account & Billing",
       description: "Manage your account, subscription, and billing information.",
       articles: 10
@@ -65,7 +66,7 @@ const HelpCenter = () => {
               <Link href="/resources">
                 <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center mb-4">
-                    <span className="text-2xl">{category.icon}</span>
+                    <category.Icon className="text-2xl text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">
                     {category.title}

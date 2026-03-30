@@ -1,33 +1,34 @@
 import React from 'react';
 import Link from 'next/link';
+import { FaComments, FaMobileAlt, FaNewspaper, FaHeadphones } from 'react-icons/fa';
 import FadeIn from '@/components/animations/FadeIn';
 import StaggerContainer, { StaggerItem } from '@/components/animations/StaggerContainer';
 
 const Community = () => {
   const resources = [
     {
-      icon: "💬",
+      Icon: FaComments,
       title: "Community Forum",
       description: "Connect with other Twillo users, share tips, and get help.",
       link: "/resources",
       members: "50,000+ members"
     },
     {
-      icon: "📱",
+      Icon: FaMobileAlt,
       title: "Social Media",
       description: "Follow us on social media for updates and tips.",
       link: "/resources",
       followers: "100,000+ followers"
     },
     {
-      icon: "📰",
+      Icon: FaNewspaper,
       title: "Newsletter",
       description: "Subscribe to our newsletter for the latest news and tips.",
       link: "/resources",
       subscribers: "25,000+ subscribers"
     },
     {
-      icon: "🎧",
+      Icon: FaHeadphones,
       title: "Podcast",
       description: "Listen to interviews with productivity experts and Twillo users.",
       link: "/resources",
@@ -57,7 +58,7 @@ const Community = () => {
               <Link href={resource.link}>
                 <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-center">
                   <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-3xl">{resource.icon}</span>
+                    <resource.Icon className="text-3xl text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">
                     {resource.title}
