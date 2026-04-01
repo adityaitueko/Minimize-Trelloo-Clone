@@ -8,15 +8,6 @@ interface StaggerContainerProps {
   className?: string;
 }
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
 const StaggerContainer = ({ 
   children, 
   staggerDelay = 0.1,

@@ -59,23 +59,17 @@ export default function SettingsPanel({
   
   const isOwner = currentUserRole === "owner";
 
-  useEffect(() => {
-    if (open) {
-      fetchData();
-    }
-  }, [open, projectId]);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     try {
       const [projectRes, membersRes] = await Promise.all([
         fetch(`/api/projects/${projectId}`),
         fetch(`/api/members?projectId=${projectId}`),
       ]);
-      
+
       const projectData = await projectRes.json();
       const membersData = await membersRes.json();
-      
+
       setProject(projectData);
       setProjectName(projectData.name);
       setMembers(membersData);
@@ -84,7 +78,13 @@ export default function SettingsPanel({
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (open) {
+      fetchData();
+    }
+  }, [open, projectId, fetchData]);
 
   const handleProjectNameUpdate = async () => {
     if (!projectName.trim() || projectName === project?.name) return;

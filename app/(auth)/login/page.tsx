@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {LoginForm} from "@/components/auth/LoginForm"
-import { getServerSession } from "next-auth"
 import { Loader2 } from "lucide-react"
+
+interface SessionUser {
+  user?: Record<string, unknown>
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<SessionUser | null>(null)
 
   useEffect(() => {
     async function checkSession() {
